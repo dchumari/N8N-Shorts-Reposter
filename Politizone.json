@@ -1,0 +1,504 @@
+{
+  "name": "Politizone",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        48
+      ],
+      "id": "5af7cebb-7906-4519-9c92-62a76c99c5ac",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "# Process each input item\noutput = []\ninput = [\n    \"RedShortsPolitics\",\n    \"MindRecaps707\",\n    \"Weknow-v8f\",\n    \"patriotecho\",\n    \"Aspireams\",\n    \"ThePoliticsZone\",\n    \"TheFacteyee\"\n]\n\nfor item in input:\n    output.append({\n        \"json\": {\n            \"handle\": f\"@{item}\"\n        }\n    })\n\n# Return the new list of items\nreturn output"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        48
+      ],
+      "id": "085effd3-1df9-4400-9169-33787f4275ab",
+      "name": "Usernames"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.youtube.com/{{ $json.handle }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        192
+      ],
+      "id": "8b88d5be-cb79-4940-9c11-9a66bff0b929",
+      "name": "Get Channel"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "from bs4 import BeautifulSoup\nimport re\n\n# Loop through input items\nfor item in _input.all():\n    html = item.json.get(\"data\", \"\")\n    \n    # Parse HTML\n    soup = BeautifulSoup(html, \"html.parser\")\n    \n    # Find script tags containing \"ytInitialData\"\n    scripts = soup.find_all(\"script\", text=re.compile(r\"ytInitialData\"))\n    \n    for script in scripts:\n        # Extract ytInitialData = { ... }\n        match = re.search(r'ytInitialData\\s*=\\s*({.*?});', script.string, re.DOTALL)\n        if match:\n            json_str = match.group(1)\n            # Search for browseId\n            channel_id_match = re.search(r'\"browseId\":\"([^\"]+)\"', json_str)\n            if channel_id_match:\n                channel_id = channel_id_match.group(1)\n                # Return ONLY the channel ID\n                return [{\"json\": {\"channelId\": channel_id}}]\n\n# Fallback if not found\nreturn [{\"json\": {\"channelId\": None}}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        192
+      ],
+      "id": "b20356cf-8c3b-487d-a00a-bf47c372aadb",
+      "name": "Filter Channel Id"
+    },
+    {
+      "parameters": {
+        "url": "=https://poketube.fun/feeds/videos.xml?channel_id={{ $json.channelId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        -96
+      ],
+      "id": "5b8f03f8-0909-42b0-8ffc-6812c8472151",
+      "name": "RSS Read for Each Channel"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1KV3p6DbFLHLRfYrbllILFmmdPTJy3vLd6KER2eDpIb4",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Politizone",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KV3p6DbFLHLRfYrbllILFmmdPTJy3vLd6KER2eDpIb4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pubDate",
+              "displayName": "pubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "author",
+              "displayName": "author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "isoDate",
+              "displayName": "isoDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        -96
+      ],
+      "id": "4176aa46-d8f7-445d-8415-99375499a203",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "azoGEgCv1bNPBmXf",
+          "name": "Quick Flixx"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "181113ed-9fad-4df9-b81d-b5e5b0a91e37",
+              "leftValue": "={{ $json.link.startsWith('https://www.youtube.com/shorts/') || $json.link.startsWith('https://youtube.com/shorts/') }}",
+              "rightValue": "=https://www.youtube.com/shorts",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "31de8de7-5af8-40b5-87ea-ef9d21b88310",
+      "name": "Filter Shorts"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -576,
+        48
+      ],
+      "id": "995d1636-641e-4c89-9e16-d5723c816d79",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -592,
+        -336
+      ],
+      "id": "2c5e87d1-3e48-442e-9229-687441cd028f",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KV3p6DbFLHLRfYrbllILFmmdPTJy3vLd6KER2eDpIb4",
+          "mode": "list",
+          "cachedResultName": "Politics Zone",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KV3p6DbFLHLRfYrbllILFmmdPTJy3vLd6KER2eDpIb4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Politizone",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KV3p6DbFLHLRfYrbllILFmmdPTJy3vLd6KER2eDpIb4/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -384,
+        -336
+      ],
+      "id": "06a16413-5f2e-4844-b66a-4d30af83d3f0",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "azoGEgCv1bNPBmXf",
+          "name": "Quick Flixx"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import random\nitems = _input.all()\nrandom.shuffle(items)\nreturn items[0]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -336
+      ],
+      "id": "36cfca41-d6dd-43db-82cb-46008397cda5",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "url": "=https://woke-proxy.poketube.fun/latest_version?id={{ $json.link.split('/').pop() }}&itag=18&local=true",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        -336
+      ],
+      "id": "94a7790e-bd25-4a35-97e6-98ec57a86274",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        -336
+      ],
+      "id": "e228d29b-0a1d-4b41-9753-c52c3438b476",
+      "name": "Wait",
+      "webhookId": "f07f9c37-2cad-4000-9dcf-5881fb7a35ae",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.title }}",
+        "regionCode": "US",
+        "categoryId": "25",
+        "options": {
+          "selfDeclaredMadeForKids": false
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        432,
+        -336
+      ],
+      "id": "09238c48-e147-4a0e-a27e-c66b29a36317",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "oIokWMr19TTV6jM5",
+          "name": "Politizone"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "RSS Read for Each Channel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usernames": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Channel": {
+      "main": [
+        [
+          {
+            "node": "Filter Channel Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Channel Id": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read for Each Channel": {
+      "main": [
+        [
+          {
+            "node": "Filter Shorts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Shorts": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Usernames",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1f8cfa3e-4bae-424d-9fa2-974578044e68",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfd0a965c8a0c4da7ad87b60660dd1ae9608cac6d2c4120ef94b5f4af64f2046"
+  },
+  "id": "FBtaZjmII6XimqzV",
+  "tags": []
+}
